@@ -1,16 +1,21 @@
 name: Build firmware
 
-# Builds a PhobGCC 2.0 (RP2040) .uf2 for each mod combination, straight from
-# this repo against a pinned upstream commit. Every command is in the log, so
-# anyone flashing a release can see exactly what went into it.
+# Builds a PhobGCC 2.0 (RP2040) .uf2 for every combination of the mods, straight
+# from this repo against a pinned upstream commit. Every command is in the log,
+# so anyone flashing a release can see exactly what went into it.
+#
+# Pushing a tag that starts with v also publishes a release with all of them
+# attached.
 
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
-  release:
-    types: [published]
+
+permissions:
+  contents: write
 
 env:
   # Pinned so builds are reproducible. Bump only after re-testing the patch.
@@ -32,6 +37,12 @@ jobs:
             mods: tiltstick
           - name: shieldtilt
             mods: shieldtilt
+          - name: tapjump-tiltstick
+            mods: tapjump,tiltstick
+          - name: tapjump-shieldtilt
+            mods: tapjump,shieldtilt
+          - name: tiltstick-shieldtilt
+            mods: tiltstick,shieldtilt
 
     steps:
       - name: Check out this mod
@@ -82,8 +93,51 @@ jobs:
           name: phobgcc-2.0-ultplus-${{ matrix.name }}
           path: phobgcc-2.0-ultplus-${{ matrix.name }}.uf2
 
-      - name: Attach to release
-        if: github.event_name == 'release'
+  # One job, after every build has succeeded, so a release is never published
+  # with a file missing.
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect every build
+        uses: actions/download-artifact@v4
+        with:
+          path: uf2
+          merge-multiple: true
+
+      - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          files: phobgcc-2.0-ultplus-${{ matrix.name }}.uf2
+          files: uf2/*.uf2
+          generate_release_notes: true
+          body: |
+            PhobGCC 2.0 (RP2040) firmware, built from this tag against
+            PhobGCC-SW [`b4f175e`](https://github.com/PhobGCC/PhobGCC-SW/commit/b4f175eaff2578193a82ad9706f92bf1cd733312).
+
+            **To flash:** hold **Start** while plugging the controller in, then copy
+            the `.uf2` onto the `RPI-RP2` drive that appears.
+
+            ### Which file
+
+            | File | Contains |
+            |---|---|
+            | `...-all.uf2` | All three mods |
+            | `...-tapjump.uf2` | Tap Jump Off |
+            | `...-tiltstick.uf2` | Tilt Stick |
+            | `...-shieldtilt.uf2` | Free Shield Tilt |
+            | `...-tapjump-tiltstick.uf2` | Tap Jump Off + Tilt Stick |
+            | `...-tapjump-shieldtilt.uf2` | Tap Jump Off + Free Shield Tilt |
+            | `...-tiltstick-shieldtilt.uf2` | Tilt Stick + Free Shield Tilt |
+
+            Every mod ships on, and each can be toggled with a button combo, so
+            `all` is a reasonable default even if you only want one of them. See
+            the [README](https://github.com/2gifts/phob-ult-control-plus#turning-them-on-and-off).
+
+            ### Before you flash
+
+            These change the inputs your controller reports and are almost
+            certainly **illegal under current Melee tournament rulesets**. They are
+            for solo play, training and friendlies. Each mod trades something away;
+            the limitations are documented per mod in
+            [docs/](https://github.com/2gifts/phob-ult-control-plus/tree/main/docs).
