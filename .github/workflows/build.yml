@@ -1,0 +1,89 @@
+name: Build firmware
+
+# Builds a PhobGCC 2.0 (RP2040) .uf2 for each mod combination, straight from
+# this repo against a pinned upstream commit. Every command is in the log, so
+# anyone flashing a release can see exactly what went into it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+env:
+  # Pinned so builds are reproducible. Bump only after re-testing the patch.
+  PHOBGCC_COMMIT: b4f175eaff2578193a82ad9706f92bf1cd733312
+  PICO_SDK_TAG: 2.3.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: all
+            mods: tapjump,tiltstick,shieldtilt
+          - name: tapjump
+            mods: tapjump
+          - name: tiltstick
+            mods: tiltstick
+          - name: shieldtilt
+            mods: shieldtilt
+
+    steps:
+      - name: Check out this mod
+        uses: actions/checkout@v4
+        with:
+          path: mod
+
+      - name: Check out PhobGCC-SW (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: PhobGCC/PhobGCC-SW
+          ref: ${{ env.PHOBGCC_COMMIT }}
+          path: PhobGCC-SW
+
+      - name: Check out Pico SDK
+        uses: actions/checkout@v4
+        with:
+          repository: raspberrypi/pico-sdk
+          ref: ${{ env.PICO_SDK_TAG }}
+          path: pico-sdk
+          submodules: recursive
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi \
+                                  libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+
+      - name: Apply the patch (${{ matrix.mods }})
+        run: python3 mod/tools/patch.py PhobGCC-SW --mods ${{ matrix.mods }}
+
+      - name: Build
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cd PhobGCC-SW/PhobGCC/rp2040
+          cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
+
+      - name: Name the artifact
+        run: |
+          cp PhobGCC-SW/PhobGCC/rp2040/build/phobgcc_rp2040.uf2 \
+             phobgcc-2.0-ultplus-${{ matrix.name }}.uf2
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: phobgcc-2.0-ultplus-${{ matrix.name }}
+          path: phobgcc-2.0-ultplus-${{ matrix.name }}.uf2
+
+      - name: Attach to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: phobgcc-2.0-ultplus-${{ matrix.name }}.uf2

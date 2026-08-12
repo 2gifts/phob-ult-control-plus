@@ -1,0 +1,15 @@
+# Build output, if you build inside a checkout of this repo
+build/
+*.uf2
+*.elf
+*.bin
+*.hex
+*.map
+*.dis
+
+# Backups the patcher leaves in a PhobGCC-SW tree
+*.orig
+
+__pycache__/
+*.pyc
+.DS_Store
