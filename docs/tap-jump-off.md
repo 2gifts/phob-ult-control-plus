@@ -1,4 +1,7 @@
-# Tap Jump Off
+# Tap Jump Off: disable tap jump in Super Smash Bros. Melee
+
+*Part of [Phob Ult Control Plus](../README.md), a PhobGCC GameCube controller mod.
+Melee has no tap jump setting, so this adds one on the controller side.*
 
 Up on the control stick stops jumping. Everything else you do with up keeps
 working.
@@ -41,9 +44,9 @@ press takes the ceiling away instantly** and hands over your real stick:
 | Input | Result |
 |---|---|
 | Up, no button | Ceiling holds. No jump. |
-| Up + A | True stick — up-tilt, up-smash |
+| Up + A | True stick, so up-tilt and up-smash work |
 | Up + B | True stick once Y is high enough for an up-B to exist |
-| Up + X or Y | True stick — a real jump, and jump-cancelled up-smash |
+| Up + X or Y | True stick, so a real jump and jump-cancelled up-smash work |
 
 This is safe because **every state that has an up-move tests it before the
 jump.** Handing over the true stick can never produce a jump there.
@@ -54,7 +57,7 @@ the character is doing.
 ## Limitations
 
 **Stick magnitude drops for about 100 ms** on a fast push up with no button held.
-The *angle* is preserved exactly — X is scaled along with Y — so the direction
+The *angle* is preserved exactly, because X is scaled along with Y, so the direction
 you input is the direction the game reads. Only the length is briefly shorter.
 
 For **DI this is the thing to know about.** Melee applies DI at the end of
@@ -66,15 +69,15 @@ affected at all, since there is no new crossing.
 If you dash and hold the direction, X keeps its true value rather than being
 scaled, so a fast up-flick cannot drop you out of a dash.
 
-**The initial dash is the one hole.** `ftCo_Dash_IASA` reaches no up-B at all —
-side-B is the only special it can start — so nothing there can answer a B press
+**The initial dash is the one hole.** `ftCo_Dash_IASA` reaches no up-B at all.
+Side-B is the only special it can start, so nothing there can answer a B press
 ahead of the jump check. In that short window, up plus B can still jump. This is
 how Melee is built, and closing it would mean guessing at game state, which
 caused worse problems than it solved.
 
 **Control-stick up-smash still works**, through the A exception. Running
 up-smash is a jump-cancelled up-smash in Melee (`ftCo_Run_IASA` contains no
-up-smash check at all — only `ftCo_KneeBend_IASA` does), so with tap jump off you
+up-smash check at all, only `ftCo_KneeBend_IASA` does), so with tap jump off you
 jump-cancel with **X or Y** instead of the stick. That path is fully supported.
 
 ## Tuning

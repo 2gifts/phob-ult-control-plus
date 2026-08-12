@@ -1,4 +1,7 @@
-# Tilt Stick
+# Tilt Stick: C-stick tilt attacks in Super Smash Bros. Melee
+
+*Part of [Phob Ult Control Plus](../README.md), a PhobGCC GameCube controller mod.
+Ultimate's "C-stick = Attack" option, for a game that never had one.*
 
 The C-stick does tilt attacks on the ground instead of smash attacks, and still
 does aerials in the air. Same as Ultimate's "Attack" C-stick setting.
@@ -37,8 +40,8 @@ The C-stick's **angle is kept**, not snapped to a cardinal. Melee reads the tilt
 from the stick angle, and inside the side-tilt band it uses that same angle to
 aim the attack up or down.
 
-So holding the C-stick off a notch — between straight forward and the
-up-forward diagonal — gives you an angled forward tilt. Fox's angled f-tilt works
+So holding the C-stick off a notch, between straight forward and the
+up-forward diagonal, gives you an angled forward tilt. Fox's angled f-tilt works
 exactly as it does on the control stick.
 
 The reported length is 45 units, under Melee's smash lines of 64 on X and 53 on
@@ -47,7 +50,7 @@ Y, so no timing can turn it into a smash, and clear of every tilt floor.
 ## Limitations
 
 **A backward side tilt on the ground is not a Melee move.** `AttackS3` is facing
-relative, and a controller cannot know which way you are facing — a backward
+relative, and a controller cannot know which way you are facing. A backward
 flick and a forward flick are the same input to the firmware. So a backward
 C-stick flick on the ground gives a jab.
 
@@ -57,7 +60,7 @@ that delay would land on **every** side tilt. That was judged not worth it.
 Aerials are unaffected and work in all four directions.
 
 **C-stick DI and SDI are gone while this is on.** The C-stick never reaches the
-console — it is centred for as long as it is deflected, not only during the
+console. It is centred for as long as it is deflected, not only during the
 press. That is deliberate: Melee reads a C-stick smash from a *crossing*, so
 letting a still-deflected C-stick snap back to its true value would fire the
 smash the mod just replaced.

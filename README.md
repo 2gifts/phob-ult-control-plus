@@ -1,12 +1,24 @@
 # Phob Ult Control Plus
 
+**Turn off tap jump, set the C-stick to tilt attacks, and tilt your shield
+without rolling, in Super Smash Bros. Melee, on a PhobGCC GameCube controller.**
+
 ![PhobGCC](https://img.shields.io/badge/PhobGCC--SW-b4f175e-1fc28e)
 ![Board](https://img.shields.io/badge/board-PhobGCC%202.0%20(RP2040)-blue)
+![Game](https://img.shields.io/badge/game-Melee%201.02-red)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
-Three optional PhobGCC firmware add-ons that give Melee a few of the control
-options Smash Ultimate players are used to. Each one is independent. Install
-one, two, or all three.
+Melee has no controls menu. There is no tap jump toggle, no "C-stick = Attack"
+setting, and no way to hold a tilted shield without rolling out of it. Those
+options arrived with Brawl, four years after Melee shipped.
+
+These are three optional PhobGCC firmware add-ons that put them in the controller
+instead, since the game will not give them to you. **No modded ISO, no Gecko
+codes, nothing on the game side.** Works with vanilla Melee 1.02 on GameCube and
+Wii, and with Slippi, because the console only ever sees ordinary controller
+inputs.
+
+Each one is independent. Install one, two, or all three.
 
 | Mod | What it gives you |
 |---|---|
@@ -100,7 +112,7 @@ cd phob-ult-control-plus
 python tools/patch.py ../PhobGCC-SW --mods tapjump,tiltstick,shieldtilt
 ```
 
-Pick any subset you like — `--mods tiltstick` on its own is fine. Then build
+Pick any subset you like. `--mods tiltstick` on its own is fine. Then build
 PhobGCC-SW normally:
 
 ```bash
@@ -148,6 +160,63 @@ survive unplugging.
 
 ---
 
+## Questions people actually ask
+
+### Can you turn off tap jump in Melee?
+
+Not in the game. Melee has no controls menu at all, so the answer everywhere else
+is "you can't, use Y to jump and the C-stick for up-smash." That is still true of
+the *game*. But the controller decides what coordinates the console sees, and
+that turns out to be enough. See [how Tap Jump Off works](docs/tap-jump-off.md).
+
+### Does this need a modded ISO, 20XX, or Gecko codes?
+
+No. Nothing changes on the game side, so it works with an unmodified Melee 1.02
+disc, on GameCube and Wii hardware, and through Slippi.
+
+### Can the C-stick do tilt attacks in Melee?
+
+Not on its own. On the ground Melee's C-stick always smashes, and every tilt
+reads the *left* stick plus A. The [Tilt Stick](docs/tilt-stick.md) mod
+translates one into the other, so a C-stick flick becomes a tilt. Aerials are
+unchanged, and angled forward tilts work.
+
+### How do you tilt your shield in Melee without rolling?
+
+Every way out of a shield needs a *fast* stick input, not just a far one, so
+shield tilting is normally an exercise in moving the stick slowly.
+[Free Shield Tilt](docs/shield-tilt.md) removes that. Hold both triggers and the
+stick can go anywhere.
+
+### Will this improve my DI, or give me an advantage?
+
+No. Tap Jump Off actually costs you a little stick magnitude for about 100 ms on
+a fast flick up with no button held. The angle is preserved exactly, and Melee
+applies DI at the end of hitlag, so in practice the read lands after the ceiling
+has lifted. It is still a real trade, and it is documented rather than hidden.
+
+### Is it tournament legal?
+
+Almost certainly not. See the warning above.
+
+### Does it work on a PhobGCC 1.x with a Teensy?
+
+The mod files live in shared code and use nothing RP2040-specific, so the patch
+applies. You would need to build through Arduino/Teensyduino yourself, and it is
+untested there. Prebuilt `.uf2` releases are PhobGCC 2.0 only.
+
+### Does it affect other Smash games, or other GameCube games?
+
+Every threshold in here comes from Melee's own code, so the mods are Melee
+specific. Turn them off with the button combos before playing anything else.
+
+### Something isn't working. Where do I ask?
+
+Open an [issue](../../issues) here. Please do **not** take questions about these
+mods to the PhobGCC Discord. This is not their project.
+
+---
+
 ## Compatibility
 
 Built and tested against PhobGCC-SW commit
@@ -176,7 +245,7 @@ this repo plus the pinned upstream commit named above, which is what the build
 workflow uses.
 
 PhobGCC is by Phobos132, FrostSSBM, CarVac, wav, Savestate, bjartskular1,
-NiceMitch and others — see
+NiceMitch and others, see
 [CONTRIBUTORS](https://github.com/PhobGCC/PhobGCC-SW/blob/main/CONTRIBUTORS.md).
 This project is not affiliated with or endorsed by the PhobGCC project. Please
 do not take support questions about these mods to the PhobGCC Discord; open an
