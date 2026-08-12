@@ -60,10 +60,17 @@ that delay would land on **every** side tilt. That was judged not worth it.
 Aerials are unaffected and work in all four directions.
 
 **C-stick DI and SDI are gone while this is on.** The C-stick never reaches the
-console. It is centred for as long as it is deflected, not only during the
-press. That is deliberate: Melee reads a C-stick smash from a *crossing*, so
-letting a still-deflected C-stick snap back to its true value would fire the
-smash the mod just replaced.
+console at all: not while held, not while returning to centre, not partially.
+
+That is deliberate and it is stricter than it first looks. Melee reads a C-stick
+smash from a *crossing*, so any value getting through risks a smash, and even a
+value too small to smash still moves the camera and the character select cursor.
+There is no safe amount to let through, so none is let through. Anything else
+that wants a live C-stick is off too, including PhobGCC's own two-stick extras
+combos.
+
+One flick gives one tilt. Nothing more happens until the C-stick returns near
+centre, which re-arms it.
 
 **If A is already held**, the synthesised press has no rising edge, so no move
 comes out.
@@ -75,3 +82,11 @@ same trade Ultimate makes.
 
 The A press fires on the same firmware loop as the C-stick flick, so there is no
 added delay compared to a vanilla C-stick smash.
+
+The mod edits the stick values **before** PhobGCC writes them into the report,
+rather than correcting the report afterwards. That is not a stylistic choice. The
+console polls from its own core at any moment, so correcting afterwards leaves a
+short window on every single loop holding a live C-stick value. At a 1 kHz loop
+against a 60 Hz poll, one of those windows gets caught every few seconds of
+holding the C-stick, and the result is a smash attack out of nowhere. Writing the
+corrected value in the first place removes the window.

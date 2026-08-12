@@ -87,16 +87,25 @@ HOOK_READSTICKS_A = f"""
 //--- {MARK} end ---
 """
 
-# readSticks: after the C-stick is written. Shield tilt centres the C-stick,
-# so it runs before the tilt stick reads it.
+# readSticks: after the C-stick is written.
 HOOK_READSTICKS_C = f"""
 //--- {MARK} begin ---
 #ifdef EXTRAS_SHIELDTILT
 	shieldTilt::hold(btn, controls.extras[shieldTilt::configSlot].config);
 #endif
+//--- {MARK} end ---
+"""
+
+# readSticks: BEFORE the stick values are written into btn. The tilt stick edits
+# them in place, so no poll can ever catch a live C-stick value.
+HOOK_READSTICKS_PRE = f"""
+//--- {MARK} begin ---
 #ifdef EXTRAS_TILTSTICK
-	// Last of all: the translated input is what the console should see.
-	tiltStick::hold(btn, controls.extras[tiltStick::configSlot].config);
+	// Runs before btn.Ax/Ay/Cx/Cy are written, not after. Correcting the report
+	// afterwards leaves a short window on every loop holding a live C-stick
+	// value, and a poll landing in one fires the smash this extra replaces.
+	tiltStick::hold(btn, remappedAx, remappedAy, remappedCx, remappedCy,
+	                currentCalStep, controls.extras[tiltStick::configSlot].config);
 #endif
 //--- {MARK} end ---
 """
@@ -169,6 +178,7 @@ PATCHES = [
     ("extras/extras.h", '#ifdef EXTRAS_ESS\n#include "ess.h"\n#endif\n', EXTRAS_INCLUDES, True),
     ("extras/extras.h", "\textrasConfigAssign(ess::extrasEssConfigSlot, ess::toggle, NULL);\n#endif\n",
      EXTRAS_INIT, True),
+    ("common/phobGCC.h", "\tfloat hystVal = 0.3;\n", HOOK_READSTICKS_PRE, False),
     ("common/phobGCC.h",
      "\t\t\tbtn.Ax = (uint8_t) (_floatOrigin + aStickX*100);\n"
      "\t\t\tbtn.Ay = (uint8_t) (_floatOrigin + aStickY*100);\n\t\t}\n\t}\n",

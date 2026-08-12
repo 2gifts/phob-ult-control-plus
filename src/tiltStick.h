@@ -35,6 +35,35 @@ namespace tiltStick {
 	 * already selects the aerial.
 	 *
 	 * ------------------------------------------------------------------------
+	 * Where this runs, and why it matters
+	 * ------------------------------------------------------------------------
+	 * This extra edits the stick values BEFORE readSticks writes them into the
+	 * report, rather than overwriting the report afterwards.
+	 *
+	 * That is not a detail. The console polls from the other core at any moment.
+	 * If the true C-stick were written first and corrected a moment later, then
+	 * on every single loop there would be a short window holding a live C-stick
+	 * value. A poll landing in one of those windows reads a C-stick flick, and
+	 * Melee fires the smash attack this extra exists to replace. At a 1 kHz loop
+	 * against a 60 Hz poll that leaks every few seconds of holding the C-stick,
+	 * which is exactly the "sometimes a smash comes out" symptom. Writing the
+	 * corrected value in the first place removes the window entirely.
+	 *
+	 * ------------------------------------------------------------------------
+	 * The C-stick is silenced completely
+	 * ------------------------------------------------------------------------
+	 * While this extra is on, the C-stick NEVER reaches the console. Not when
+	 * held, not when returning to centre, not partially.
+	 *
+	 * Melee reads a C-stick smash from a CROSSING, so any value getting through
+	 * risks a smash, and a partial value that is too small to smash still moves
+	 * the camera and the character select cursor. There is no safe amount to let
+	 * through, so none is.
+	 *
+	 * One flick gives one tilt. Nothing else happens until the C-stick returns
+	 * near centre, which re-arms it for the next input.
+	 *
+	 * ------------------------------------------------------------------------
 	 * Two details that matter
 	 * ------------------------------------------------------------------------
 	 * The angle is kept, not snapped to a cardinal. Melee reads the tilt from the
@@ -42,20 +71,19 @@ namespace tiltStick {
 	 * the attack up or down. Holding the C-stick off a notch therefore gives an
 	 * angled forward tilt, as Fox has.
 	 *
-	 * The C-stick is centred for as long as it is deflected, not only during the
-	 * press. Melee reads a C-stick smash from a CROSSING, so letting a still
-	 * deflected C-stick snap back to its true value would read as a fresh flick
-	 * and fire the smash this extra just replaced.
+	 * A is set on the button struct as well as on the copy processButtons uses.
+	 * The other extras read it from there, and an A press is what tells the tap
+	 * jump lockout that a real move is happening.
 	 *
 	 * ------------------------------------------------------------------------
 	 * Known limits, all from the game rather than the firmware
 	 * ------------------------------------------------------------------------
 	 * A backward side tilt on the ground is not a Melee move. AttackS3 is facing
 	 * relative and a controller cannot know which way you face, so a backward
-	 * flick gives a jab. Aerials are unaffected and work in all directions.
+	 * flick gives a jab. Aerials are unaffected.
 	 *
-	 * C-stick DI and SDI are gone while this is on, because the C-stick never
-	 * reaches the console.
+	 * C-stick DI and SDI are gone while this is on, as is anything else that
+	 * wants a live C-stick, including PhobGCC's own two-stick extras combos.
 	 *
 	 * If A is already held, the synthesised press has no rising edge, so no move
 	 * comes out.
@@ -81,8 +109,8 @@ namespace tiltStick {
 	};
 
 	//Stick units: 100 is full deflection
-	const int trigger = 40;//C-stick travel needed to fire
-	const int release = 28;//and to re-arm, so a resting stick cannot chatter
+	const int trigger = 40;//C-stick travel that fires a tilt
+	const int rearm   = 20;//and the travel it must fall back under to fire again
 
 	/* Reported left stick length. Under Melee's smash lines of 64 on X and 53 on
 	 * Y, so no timing can turn it into a smash, and clear of every tilt floor. */
@@ -96,7 +124,7 @@ namespace tiltStick {
 
 	ExtrasSlot configSlot = slot;
 
-	bool     _deflected = false;//C-stick is out, so keep it hidden
+	bool     _armed     = true; //the C-stick has returned near centre
 	bool     _firing    = false;
 	uint32_t _fireStart = 0;
 	int      _dirX      = 0;
@@ -110,60 +138,62 @@ namespace tiltStick {
 	// Hooks
 	//------------------------------------------------------------------
 
-	/* Called from readSticks, after both sticks are written and after every other
-	 * extra, so the translated input is what the console finally sees. */
-	void hold(Buttons &btn, const IntOrFloat config[]) {
-		if(!enabled(config)) {
-			_deflected = false;
+	/* Called from readSticks after the stick values are clamped and BEFORE they
+	 * are written into btn. Editing them here is what closes the polling window
+	 * described above.
+	 *
+	 * calStep is passed so the extra stands aside during stick calibration,
+	 * which needs to see the real C-stick. */
+	void hold(Buttons &btn, float &ax, float &ay, float &cx, float &cy,
+	          const int calStep, const IntOrFloat config[]) {
+		if(!enabled(config) || calStep != -1) {
+			_armed = true;
 			_firing = false;
 			return;
 		}
 
-		const int cx = (int) btn.Cx - _intOrigin;
-		const int cy = (int) btn.Cy - _intOrigin;
-		const int ax = (cx < 0) ? -cx : cx;
-		const int ay = (cy < 0) ? -cy : cy;
-		const int mag = (ax > ay) ? ax : ay;
+		const int icx = (int) cx;
+		const int icy = (int) cy;
+		const int adx = (icx < 0) ? -icx : icx;
+		const int ady = (icy < 0) ? -icy : icy;
+		const int mag = (adx > ady) ? adx : ady;
 		const uint32_t now = micros();
 
-		if(!_deflected && mag >= trigger) {
-			_deflected = true;
+		if(_armed && mag >= trigger) {
+			_armed     = false;//one flick, one tilt, until it comes back to centre
 			_firing    = true;
 			_fireStart = now;
 			//Keep the angle, fix only the length
-			const float len = sqrtf((float) (cx * cx + cy * cy));
+			const float len = sqrtf((float) (icx * icx + icy * icy));
 			if(len < 1.0f) {
 				_dirX = 0;
 				_dirY = tiltMag;
 			} else {
-				_dirX = (int) ((cx * (float) tiltMag) / len);
-				_dirY = (int) ((cy * (float) tiltMag) / len);
+				_dirX = (int) ((icx * (float) tiltMag) / len);
+				_dirY = (int) ((icy * (float) tiltMag) / len);
 			}
-		} else if(_deflected && mag < release) {
-			_deflected = false;
+		} else if(!_armed && mag < rearm) {
+			_armed = true;
 		}
 
 		if(_firing && (now - _fireStart) >= (uint32_t) holdMs * 1000u) {
 			_firing = false;
 		}
 
-		if(_deflected) {
-			btn.Cx = (uint8_t) _intOrigin;
-			btn.Cy = (uint8_t) _intOrigin;
-		}
+		//Silence the C-stick unconditionally. See the note above.
+		cx = 0.0f;
+		cy = 0.0f;
+
 		if(_firing) {
-			btn.Ax = (uint8_t) (_dirX + _floatOrigin);
-			btn.Ay = (uint8_t) (_dirY + _floatOrigin);
-			/* Set A here as well as in injectButtons. Writing it beside the stick
-			 * closes the gap where the console could poll a tilt sized stick with
-			 * no button attached, which another extra could read as a bare input. */
+			ax = (float) _dirX;
+			ay = (float) _dirY;
+			//Set A beside the stick so no poll can see one without the other
 			btn.A = (uint8_t) 1;
 		}
 	}
 
 	/* Called from processButtons on tempBtn, before anything else reads the
-	 * buttons, so the synthesised press is visible to the other extras and
-	 * survives copyButtons. */
+	 * buttons, so the synthesised press survives copyButtons. */
 	void injectButtons(Buttons &tempBtn) {
 		if(_firing) {
 			tempBtn.A = (uint8_t) 1;
