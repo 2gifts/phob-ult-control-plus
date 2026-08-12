@@ -252,3 +252,9 @@ do not take support questions about these mods to the PhobGCC Discord; open an
 issue here instead.
 
 Mechanics research comes from the [Melee decompilation](https://github.com/doldecomp/melee).
+
+The shield tilt clamps were cross-checked against
+[pico-rectangle](https://github.com/JulienBernard3383279/pico-rectangle) by
+Julien Bernard, whose Melee logic has to solve the same problem with fixed
+coordinates. No code from that project is used here; its licence is separate from
+this one and grants use in digital controllers specifically.

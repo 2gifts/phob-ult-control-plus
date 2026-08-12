@@ -66,8 +66,17 @@ shielding, wavedashing and light shielding are untouched.
 **You cannot roll or spotdodge while both are held.** Release one to get them
 back.
 
-**The clamp values are estimates.** `x31C` and `x314` live in `PlCo.dat` rather
-than in code, so the clamps (50 on X, 42 on Y) are set from community-reported
-thresholds with margin. If an escape ever slips out, they can be lowered in
-[`src/shieldTilt.h`](../src/shieldTilt.h). The constants are named and
-commented at the top of the file.
+**The clamp values come from somewhere else's tuning.** `x31C` and `x314` live in
+`PlCo.dat` rather than in code, so they cannot be read straight out of the
+decompilation. The clamps here (53 on X, 43 on Y) match the coordinates
+[pico-rectangle](https://github.com/JulienBernard3383279/pico-rectangle) uses for
+the same job, which is a useful independent check: a digital controller reaches
+its coordinate in a single frame, so any value it can hold while shielding is one
+Melee will not escape from even with its timer at zero.
+
+Y deliberately stays short of Melee's shield drop band, which is roughly -0.6625
+to -0.6875. Going further would drop you through a platform when you only wanted
+to angle the shield.
+
+If an escape ever slips out, both constants are named and commented at the top of
+[`src/shieldTilt.h`](../src/shieldTilt.h).

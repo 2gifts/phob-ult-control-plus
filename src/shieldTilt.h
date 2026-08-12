@@ -74,10 +74,23 @@ namespace shieldTilt {
 		SHIELDTILT_OFF = 1
 	};
 
-	/* Clamps, in stick units. Melee's escape lines are about 64 for a roll and 53
-	 * for a spotdodge or a jump, so these sit clear below them. */
-	const int clampX = 50;
-	const int clampY = 42;
+	/* Clamps, in stick units, where 80 units is 1.0 in Melee's own scale.
+	 *
+	 * These match the values the pico-rectangle firmware uses for the same job.
+	 * A digital controller reaches its coordinate in a single frame, so anything
+	 * it can hold while shielding is a coordinate Melee will not escape from even
+	 * with its timer at zero. That makes it a useful independent check on numbers
+	 * that otherwise come from PlCo.dat estimates.
+	 *
+	 * Sideways: 0.6625, which is 53 units. Held while shielding without rolling.
+	 * Down: 0.5375, which is 43 units. Held while shielding without spotdodging.
+	 *
+	 * Y stays well short of Melee's shield drop band (-0.6625 to -0.6875) on
+	 * purpose. Going further would drop you through a platform when you only
+	 * wanted to angle the shield.
+	 */
+	const int clampX = 53;
+	const int clampY = 43;
 
 	//Melee's small tilt threshold, where its timers restart
 	const int crossV = 23;
