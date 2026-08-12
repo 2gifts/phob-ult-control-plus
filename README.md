@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
 Three optional PhobGCC firmware add-ons that give Melee a few of the control
-options Smash Ultimate players are used to. Each one is independent — install
+options Smash Ultimate players are used to. Each one is independent. Install
 one, two, or all three.
 
 | Mod | What it gives you |
@@ -34,13 +34,12 @@ macros.
 running these to bracket.** Assume any event will consider it illegal, and check
 with a TO if you are ever unsure.
 
-They are not built to give anyone an edge, and they do not. Every one of them
-gives up something in exchange (see the limitations in each doc). The goal is to
+These mods are not built to give anyone an edge. The goal is to
 lower the wall for players coming from Ultimate, where these options are just
 settings in a menu.
 
-Melee's inputs are not badly designed — they are *differently* designed, and a
-lot of Ultimate players bounce off the game before they get to that. If you want
+Melee's vanilla input system is very different from newer smash titles, and a
+lot of Ult players bounce off the game before they embrace the intricacies. If you want
 to learn the game as it is, do that instead; it is better. This is for the people
 who would otherwise stop playing.
 
@@ -64,16 +63,14 @@ That is why a fast push up jumps and a slow push up does not. Rolls, spotdodges,
 dashes and smash attacks all work the same way.
 
 A controller can therefore prevent a specific accident by holding a value
-briefly, letting the timer age, and then handing the real stick back — without
+briefly, letting the timer age, and then handing the real stick back, without
 knowing anything about the game state. Two of these mods do exactly that. The
 third (Tilt Stick) cannot, because Melee has no tilt-from-C-stick to filter
 towards, so it translates the input instead.
 
 **None of these mods track game state.** No character, no action, no
 grounded-or-airborne guessing. They read the stick and the buttons and nothing
-else. That constraint is deliberate: earlier drafts tried to time the dash to
-tell Melee's Dash state from its Run state, and every error in that guess turned
-into a move that would not come out.
+else.
 
 ---
 
