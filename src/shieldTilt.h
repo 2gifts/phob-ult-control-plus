@@ -145,34 +145,36 @@ namespace shieldTilt {
 	// Hook
 	//------------------------------------------------------------------
 
-	//Called from readSticks, after btn.Ax, btn.Ay, btn.Cx and btn.Cy are written.
-	void hold(Buttons &btn, const IntOrFloat config[]) {
-		const int trueX = (int) btn.Ax - _intOrigin;
-		const int trueY = (int) btn.Ay - _intOrigin;
-
+	/* Called from readSticks after the stick values are clamped and BEFORE they
+	 * are written into btn. btn is still needed for the trigger state, which is
+	 * one loop old and none the worse for it.
+	 *
+	 * calStep is passed so the extra stands aside during stick calibration. */
+	void hold(Buttons &btn, float &ax, float &ay, float &cx, float &cy,
+	          const int calStep, const IntOrFloat config[]) {
 		const bool lHeld = btn.L || (btn.La >= analogHeld);
 		const bool rHeld = btn.R || (btn.Ra >= analogHeld);
 
-		if(!enabled(config) || !lHeld || !rHeld) {
+		if(!enabled(config) || calStep != -1 || !lHeld || !rHeld) {
 			_xPast = false;
 			_yPast = false;
 			return;
 		}
 
+		const int trueX = (int) ax;
+		const int trueY = (int) ay;
 		const uint32_t now = micros();
-		const bool xFree = axisFree(trueX, _xPast, _xSince, now);
-		const bool yFree = axisFree(trueY, _yPast, _ySince, now);
 
-		if(!xFree) {
-			btn.Ax = (uint8_t) (clampTo(trueX, clampX) + _floatOrigin);
+		if(!axisFree(trueX, _xPast, _xSince, now)) {
+			ax = (float) clampTo(trueX, clampX);
 		}
-		if(!yFree) {
-			btn.Ay = (uint8_t) (clampTo(trueY, clampY) + _floatOrigin);
+		if(!axisFree(trueY, _yPast, _ySince, now)) {
+			ay = (float) clampTo(trueY, clampY);
 		}
 
-		//The C-stick escapes have no timer, so centre it
-		btn.Cx = (uint8_t) _intOrigin;
-		btn.Cy = (uint8_t) _intOrigin;
+		//The C-stick escapes have no timer, so silence it
+		cx = 0.0f;
+		cy = 0.0f;
 	}
 }
 

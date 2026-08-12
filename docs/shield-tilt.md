@@ -51,6 +51,18 @@ clamp nor a delay can make them safe. The C-stick does not tilt the shield in
 Melee, so nothing is lost. You only give up C-stick rolls and C-stick jump out
 of shield, which is what you asked for by holding both triggers.
 
+## Where this runs
+
+The clamps are applied to the stick values **before** PhobGCC writes them into
+the report, not to the report afterwards.
+
+That matters. The console polls from its own core at any moment, so clamping
+afterwards leaves a window on every loop holding the true, unclamped stick. A
+poll landing in one reads a full deflection with Melee's timer freshly reset,
+which is a roll or a spotdodge out of nowhere. The C-stick is worse, because its
+escapes have no timer and fire on position alone, so a single leaked poll is
+enough.
+
 ## Light shield
 
 Both triggers count as held from either the digital press **or** a firm analog

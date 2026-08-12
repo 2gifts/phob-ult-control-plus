@@ -70,7 +70,13 @@ that wants a live C-stick is off too, including PhobGCC's own two-stick extras
 combos.
 
 One flick gives one tilt. Nothing more happens until the C-stick returns near
-centre, which re-arms it.
+centre **and stays there for 40 ms**, which re-arms it.
+
+That short wait is a snapback filter. Releasing a stick overshoots past centre
+and rings for a few milliseconds, and PhobGCC's Kalman snapback filter only runs
+on the left stick. Without the wait, letting go of a down input rings up past the
+trigger and fires an up tilt on the way back. Melee's own tilt endlag is far
+longer than 40 ms, so nothing real is lost.
 
 **If A is already held**, the synthesised press has no rising edge, so no move
 comes out.

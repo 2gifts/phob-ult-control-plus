@@ -87,23 +87,19 @@ HOOK_READSTICKS_A = f"""
 //--- {MARK} end ---
 """
 
-# readSticks: after the C-stick is written.
-HOOK_READSTICKS_C = f"""
-//--- {MARK} begin ---
-#ifdef EXTRAS_SHIELDTILT
-	shieldTilt::hold(btn, controls.extras[shieldTilt::configSlot].config);
-#endif
-//--- {MARK} end ---
-"""
-
-# readSticks: BEFORE the stick values are written into btn. The tilt stick edits
-# them in place, so no poll can ever catch a live C-stick value.
+# readSticks: BEFORE the stick values are written into btn. Both of these edit
+# the values in place. Correcting the report afterwards instead would leave a
+# window on every loop holding an unfiltered value, and the C-stick's shield
+# escapes have no timer at all, so one leaked poll is enough to roll.
 HOOK_READSTICKS_PRE = f"""
 //--- {MARK} begin ---
+#ifdef EXTRAS_SHIELDTILT
+	// Shield tilt runs first: it silences the C-stick, which is also what keeps
+	// the tilt stick from firing while you are holding a shield.
+	shieldTilt::hold(btn, remappedAx, remappedAy, remappedCx, remappedCy,
+	                 currentCalStep, controls.extras[shieldTilt::configSlot].config);
+#endif
 #ifdef EXTRAS_TILTSTICK
-	// Runs before btn.Ax/Ay/Cx/Cy are written, not after. Correcting the report
-	// afterwards leaves a short window on every loop holding a live C-stick
-	// value, and a poll landing in one fires the smash this extra replaces.
 	tiltStick::hold(btn, remappedAx, remappedAy, remappedCx, remappedCy,
 	                currentCalStep, controls.extras[tiltStick::configSlot].config);
 #endif
@@ -183,10 +179,6 @@ PATCHES = [
      "\t\t\tbtn.Ax = (uint8_t) (_floatOrigin + aStickX*100);\n"
      "\t\t\tbtn.Ay = (uint8_t) (_floatOrigin + aStickY*100);\n\t\t}\n\t}\n",
      HOOK_READSTICKS_A, True),
-    ("common/phobGCC.h",
-     "\t\t\tbtn.Cx = (uint8_t) (_floatOrigin + cStickX*100);\n"
-     "\t\t\tbtn.Cy = (uint8_t) (_floatOrigin + cStickY*100);\n\t\t}\n\t}\n",
-     HOOK_READSTICKS_C, True),
     ("common/phobGCC.h", "\t//Copy temp buttons (including analog triggers) back to btn\n",
      HOOK_PROCESSBUTTONS, False),
     ("common/phobGCC.h", "\t\t} else if(checkAdjustExtra(EXTRAS_UP, btn, false)) { // Toggle Extras\n",

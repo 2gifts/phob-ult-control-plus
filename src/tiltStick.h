@@ -61,7 +61,9 @@ namespace tiltStick {
 	 * through, so none is.
 	 *
 	 * One flick gives one tilt. Nothing else happens until the C-stick returns
-	 * near centre, which re-arms it for the next input.
+	 * near centre AND stays there briefly, which re-arms it for the next input.
+	 * The wait is what stops snapback ringing from firing a second, opposite
+	 * tilt on the way back.
 	 *
 	 * ------------------------------------------------------------------------
 	 * Two details that matter
@@ -112,6 +114,16 @@ namespace tiltStick {
 	const int trigger = 40;//C-stick travel that fires a tilt
 	const int rearm   = 20;//and the travel it must fall back under to fire again
 
+	/* How long the C-stick must stay under rearm before it may fire again.
+	 *
+	 * Releasing a stick overshoots past centre and rings for a few milliseconds.
+	 * PhobGCC's Kalman snapback filter only runs on the LEFT stick; the C-stick
+	 * gets smoothing, which shrinks the overshoot but does not remove it. Without
+	 * this wait, letting go of a down input rings up past the trigger and fires
+	 * an up tilt on the way back. Melee's own tilt endlag is far longer than
+	 * this, so it costs nothing real. */
+	const int settleMs = 40;
+
 	/* Reported left stick length. Under Melee's smash lines of 64 on X and 53 on
 	 * Y, so no timing can turn it into a smash, and clear of every tilt floor. */
 	const int tiltMag = 45;
@@ -124,9 +136,11 @@ namespace tiltStick {
 
 	ExtrasSlot configSlot = slot;
 
-	bool     _armed     = true; //the C-stick has returned near centre
-	bool     _firing    = false;
-	uint32_t _fireStart = 0;
+	bool     _armed      = true; //the C-stick has settled near centre
+	bool     _firing     = false;
+	uint32_t _fireStart  = 0;
+	uint32_t _centreSince = 0;   //when it fell under rearm
+	bool     _atCentre   = true;
 	int      _dirX      = 0;
 	int      _dirY      = 0;
 
@@ -148,6 +162,7 @@ namespace tiltStick {
 	          const int calStep, const IntOrFloat config[]) {
 		if(!enabled(config) || calStep != -1) {
 			_armed = true;
+			_atCentre = true;
 			_firing = false;
 			return;
 		}
@@ -159,8 +174,21 @@ namespace tiltStick {
 		const int mag = (adx > ady) ? adx : ady;
 		const uint32_t now = micros();
 
+		/* Re-arm only after the stick has been quiet under rearm for settleMs.
+		 * Snapback ringing crosses back over rearm, which restarts the wait. */
+		if(mag < rearm) {
+			if(!_atCentre) {
+				_atCentre = true;
+				_centreSince = now;
+			} else if(!_armed && (now - _centreSince) >= (uint32_t) settleMs * 1000u) {
+				_armed = true;
+			}
+		} else {
+			_atCentre = false;
+		}
+
 		if(_armed && mag >= trigger) {
-			_armed     = false;//one flick, one tilt, until it comes back to centre
+			_armed     = false;//one flick, one tilt, until it settles again
 			_firing    = true;
 			_fireStart = now;
 			//Keep the angle, fix only the length
@@ -172,8 +200,6 @@ namespace tiltStick {
 				_dirX = (int) ((icx * (float) tiltMag) / len);
 				_dirY = (int) ((icy * (float) tiltMag) / len);
 			}
-		} else if(!_armed && mag < rearm) {
-			_armed = true;
 		}
 
 		if(_firing && (now - _fireStart) >= (uint32_t) holdMs * 1000u) {
