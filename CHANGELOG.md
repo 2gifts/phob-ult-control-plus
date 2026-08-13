@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.1
+
+**Tilt Stick: angled tilts are much easier to hit.**
+
+A flick is now snapped to one of eight directions instead of passing the raw
+C-stick angle through. The four corners give the angled forward tilt, and they
+get a wider slice than the cardinals, 50 degrees against 40, because a cardinal
+is easy to find on the gate and a corner is not.
+
+A corner reports a clean 45 degrees, which is what Melee's `decideAngle` needs to
+pick an angled variant rather than the straight one.
+
+No change to Tap Jump Off or Free Shield Tilt. Their `.uf2` files are identical
+to 1.0.0.
+
 ## 1.0.0
 
 First release. Three independent PhobGCC extras for Melee:
