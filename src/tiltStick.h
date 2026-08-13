@@ -138,13 +138,23 @@ namespace tiltStick {
 	 * That leaves the cardinals 40 degrees wide each and the corners 50. */
 	const int zoneTan = 364;
 
-	/* What a corner reports: tiltMag at about 25 degrees. Melee needs this well
-	 * inside its side tilt band, since past that band it becomes an up or down
-	 * tilt, and high enough within it to pick the angled variant rather than the
-	 * straight one. If corners give a straight side tilt, raise angledY. If they
-	 * give an up or down tilt, lower it. */
-	const int angledX = 41;
-	const int angledY = 19;
+	/* What a corner reports: tiltMag at a true 45 degrees.
+	 *
+	 * Melee picks the side tilt variant by angle (ftCo_AttackS3.c, decideAngle):
+	 * above x9C it is the fully angled one, above xA0 the slightly angled one,
+	 * and anything shallower is the straight one. Those live in PlCo.dat, but 45
+	 * is known to clear them, because passing the raw C-stick angle straight
+	 * through used to produce angled tilts from a corner flick.
+	 *
+	 * 45 also stays inside the side tilt band. Past that band it would become an
+	 * up or down tilt instead, and that band edge is above 45 for the same
+	 * reason. An earlier attempt at 25 degrees was too shallow and gave the
+	 * straight tilt.
+	 *
+	 * 32 and 32 is tiltMag at 45 degrees, and both stay under Melee's smash
+	 * lines of 64 on X and 53 on Y. */
+	const int angledX = 32;
+	const int angledY = 32;
 
 	const int holdMs = 34;//two frames, so the console is certain to read the press
 

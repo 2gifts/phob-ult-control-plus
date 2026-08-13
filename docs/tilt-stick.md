@@ -39,11 +39,12 @@ selects the aerial. No special case is needed.
 Flick the C-stick into one of the **four corners** and you get an angled forward
 tilt. No holding a precise spot on the rim: the corner is the input.
 
-The flick is snapped to one of eight directions, and the corners are reported to
-Melee as a **shallow** angle rather than the 45 degrees you actually flicked.
-That is the whole trick. Melee reads the tilt from the stick angle, and a raw 45
-sits outside its side-tilt band, so it would come out as an up or down tilt
-instead.
+The flick is snapped to one of eight directions, and a corner is reported as a
+clean 45 degrees. Melee picks the side-tilt variant from the stick angle
+(`ftCo_AttackS3.c`, `decideAngle`): past one threshold it is the fully angled
+attack, past a shallower one it is the slightly angled attack, and anything
+flatter is the straight one. 45 clears them, and still sits inside the side-tilt
+band, so it does not turn into an up or down tilt.
 
 **The corners get a wider slice than the cardinals**, because a cardinal is easy
 to find on the gate and a corner is not. Anything more than 20 degrees off a
