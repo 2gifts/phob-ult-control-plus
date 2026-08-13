@@ -36,13 +36,19 @@ selects the aerial. No special case is needed.
 
 ## Angled tilts
 
-The C-stick's **angle is kept**, not snapped to a cardinal. Melee reads the tilt
-from the stick angle, and inside the side-tilt band it uses that same angle to
-aim the attack up or down.
+Flick the C-stick into one of the **four corners** and you get an angled forward
+tilt. No holding a precise spot on the rim: the corner is the input.
 
-So holding the C-stick off a notch, between straight forward and the
-up-forward diagonal, gives you an angled forward tilt. Fox's angled f-tilt works
-exactly as it does on the control stick.
+The flick is snapped to one of eight directions, and the corners are reported to
+Melee as a **shallow** angle rather than the 45 degrees you actually flicked.
+That is the whole trick. Melee reads the tilt from the stick angle, and a raw 45
+sits outside its side-tilt band, so it would come out as an up or down tilt
+instead.
+
+**The corners get a wider slice than the cardinals**, because a cardinal is easy
+to find on the gate and a corner is not. Anything more than 20 degrees off a
+cardinal counts as a corner, which leaves the cardinals 40 degrees wide each and
+the corners 50.
 
 The reported length is 45 units, under Melee's smash lines of 64 on X and 53 on
 Y, so no timing can turn it into a smash, and clear of every tilt floor.

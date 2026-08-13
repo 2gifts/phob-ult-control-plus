@@ -68,10 +68,15 @@ namespace tiltStick {
 	 * ------------------------------------------------------------------------
 	 * Two details that matter
 	 * ------------------------------------------------------------------------
-	 * The angle is kept, not snapped to a cardinal. Melee reads the tilt from the
-	 * stick angle, and inside the side tilt band it uses that same angle to aim
-	 * the attack up or down. Holding the C-stick off a notch therefore gives an
-	 * angled forward tilt, as Fox has.
+	 * The flick is snapped to one of EIGHT directions, and the four corners give
+	 * an angled side tilt. Melee reads the tilt from the stick angle, and inside
+	 * the side tilt band it uses that same angle to aim the attack up or down,
+	 * so a corner is reported as a shallow angle rather than as the 45 degrees
+	 * it was flicked at. A raw 45 would read as an up or down tilt instead.
+	 *
+	 * The corners get a WIDER slice than the cardinals, because a cardinal is
+	 * easy to hit on the gate and a corner is not. Anything more than 20 degrees
+	 * off a cardinal counts as a corner.
 	 *
 	 * A is set on the button struct as well as on the copy processButtons uses.
 	 * The other extras read it from there, and an A press is what tells the tap
@@ -128,6 +133,19 @@ namespace tiltStick {
 	 * Y, so no timing can turn it into a smash, and clear of every tilt floor. */
 	const int tiltMag = 45;
 
+	/* Zone edge, as tan(angle) x 1000. 364 is 20 degrees, so a flick within 20
+	 * degrees of a cardinal is that cardinal, and everything else is a corner.
+	 * That leaves the cardinals 40 degrees wide each and the corners 50. */
+	const int zoneTan = 364;
+
+	/* What a corner reports: tiltMag at about 25 degrees. Melee needs this well
+	 * inside its side tilt band, since past that band it becomes an up or down
+	 * tilt, and high enough within it to pick the angled variant rather than the
+	 * straight one. If corners give a straight side tilt, raise angledY. If they
+	 * give an up or down tilt, lower it. */
+	const int angledX = 41;
+	const int angledY = 19;
+
 	const int holdMs = 34;//two frames, so the console is certain to read the press
 
 	//------------------------------------------------------------------
@@ -167,6 +185,7 @@ namespace tiltStick {
 			return;
 		}
 
+		//cx and cy are the live C-stick, by reference, before it is written out
 		const int icx = (int) cx;
 		const int icy = (int) cy;
 		const int adx = (icx < 0) ? -icx : icx;
@@ -191,14 +210,18 @@ namespace tiltStick {
 			_armed     = false;//one flick, one tilt, until it settles again
 			_firing    = true;
 			_fireStart = now;
-			//Keep the angle, fix only the length
-			const float len = sqrtf((float) (icx * icx + icy * icy));
-			if(len < 1.0f) {
+			//Snap to eight directions: four cardinals and four angled corners
+			const int sx = (icx < 0) ? -1 : 1;
+			const int sy = (icy < 0) ? -1 : 1;
+			if(ady * 1000 < adx * zoneTan) {         //within 20 deg of horizontal
+				_dirX = sx * tiltMag;
+				_dirY = 0;
+			} else if(adx * 1000 < ady * zoneTan) {  //within 20 deg of vertical
 				_dirX = 0;
-				_dirY = tiltMag;
-			} else {
-				_dirX = (int) ((icx * (float) tiltMag) / len);
-				_dirY = (int) ((icy * (float) tiltMag) / len);
+				_dirY = sy * tiltMag;
+			} else {                                 //a corner: angled side tilt
+				_dirX = sx * angledX;
+				_dirY = sy * angledY;
 			}
 		}
 
